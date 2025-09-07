@@ -1,0 +1,1 @@
+sqlite3 C:\GameSearch\steamcharts_scraper\db\steamcharts.db

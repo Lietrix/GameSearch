@@ -1,1 +1,8 @@
 sqlite3 C:\GameSearch\steamcharts_scraper\db\steamcharts.db
+
+SELECT COUNT(*) FROM snapshots;
+SELECT COUNT(*) FROM apps;
+
+9/8/2025, 2:13PM
+2210 apps
+6089 snapshots

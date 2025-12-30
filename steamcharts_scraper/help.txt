@@ -6,3 +6,11 @@ SELECT COUNT(*) FROM apps;
 9/8/2025, 2:13PM
 2210 apps
 6089 snapshots
+
+12/17/2025, 9:07AM
+4033 apps
+218387 snapshots
+
+12/29/2025, 12:31PM
+4136 apps
+248042 snapshots

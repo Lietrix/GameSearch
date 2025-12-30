@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # ======== CONFIG ========
-DB_PATH = os.getenv("GSE_DB", r"C:\\GameSearch\\steamcharts_scraper\\db\\games.sqlite")
+DB_PATH = os.getenv("GSE_DB", r"C:\\GameSearch\\steamcharts_scraper\\db\\steamcharts.db")
 TABLE_NAME = os.getenv("GSE_TABLE", "steamcharts_top")
 
 # Column mapping — edit if your table uses different names
@@ -116,10 +116,34 @@ def get_game(app_id: int):
         raise HTTPException(status_code=404, detail="Not found")
     return Game(**dict(row))
 
-# Optional: ensure helpful indexes (no-op if already exist)
 @app.on_event("startup")
 def ensure_indexes():
     with get_conn() as conn:
-        conn.execute(f"CREATE INDEX IF NOT EXISTS ix_{TABLE_NAME}_{COL_NAME} ON {TABLE_NAME}({COL_NAME})")
-        conn.execute(f"CREATE INDEX IF NOT EXISTS ix_{TABLE_NAME}_{COL_CUR} ON {TABLE_NAME}({COL_CUR})")
+        # Helpful indexes on the REAL tables
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_apps_name ON apps(name)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_app_id ON snapshots(app_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_ts ON snapshots(ts)")
+        conn.commit()
+
+        # View that matches what the API expects (latest snapshot per app)
+        conn.execute("""
+        CREATE VIEW IF NOT EXISTS steamcharts_top AS
+        SELECT
+          a.app_id            AS app_id,
+          a.name              AS name,
+          s.avg_players       AS current_players,
+          s.peak_players      AS peak_24h,
+          s.peak_players      AS all_time_peak
+        FROM apps a
+        JOIN (
+          SELECT s1.app_id, s1.avg_players, s1.peak_players
+          FROM snapshots s1
+          JOIN (
+            SELECT app_id, MAX(ts) AS ts
+            FROM snapshots
+            GROUP BY app_id
+          ) latest
+          ON latest.app_id = s1.app_id AND latest.ts = s1.ts
+        ) s ON s.app_id = a.app_id
+        """)
         conn.commit()

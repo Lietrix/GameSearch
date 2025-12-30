@@ -126,24 +126,22 @@ def ensure_indexes():
         conn.commit()
 
         # View that matches what the API expects (latest snapshot per app)
+        conn.execute("DROP VIEW IF EXISTS steamcharts_top")
         conn.execute("""
         CREATE VIEW IF NOT EXISTS steamcharts_top AS
         SELECT
-          a.app_id            AS app_id,
-          a.name              AS name,
-          s.avg_players       AS current_players,
-          s.peak_players      AS peak_24h,
-          s.peak_players      AS all_time_peak
+        a.app_id            AS app_id,
+        a.name              AS name,
+        s.avg_players       AS current_players,
+        s.peak_players      AS peak_24h,
+        s.peak_players      AS all_time_peak
         FROM apps a
-        JOIN (
-          SELECT s1.app_id, s1.avg_players, s1.peak_players
-          FROM snapshots s1
-          JOIN (
-            SELECT app_id, MAX(ts) AS ts
-            FROM snapshots
-            GROUP BY app_id
-          ) latest
-          ON latest.app_id = s1.app_id AND latest.ts = s1.ts
-        ) s ON s.app_id = a.app_id
+        JOIN snapshots s
+        ON s.app_id = a.app_id
+        WHERE s.ts = (
+        SELECT MAX(s2.ts)
+        FROM snapshots s2
+        WHERE s2.app_id = a.app_id
+        )
         """)
         conn.commit()

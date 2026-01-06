@@ -5,3 +5,9 @@ cd C:\GameSearch\backend
 uvicorn main:app --reload
 
 http://127.0.0.1:8000/docs
+
+or
+
+cd C:\GameSearch\frontend
+
+npm run dev
